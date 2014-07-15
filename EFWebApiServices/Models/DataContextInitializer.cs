@@ -6,7 +6,7 @@ using System.Data.Entity;
 
 namespace EFWebApiServices.Models
 {
-    public class DataContextInitializer : DropCreateDatabaseAlways<EFWebApiServicesContext>
+    public class DataContextInitializer : DropCreateDatabaseIfModelChanges<EFWebApiServicesContext>
     {
         protected override void Seed(EFWebApiServicesContext context)
         {

@@ -2,17 +2,41 @@
     'use strict';
 
     var serviceId = 'datacontext';
-    angular.module('app').factory(serviceId, ['common', datacontext]);
+    angular.module('app').factory(serviceId, ['common', 'entityManagerFactory', datacontext]);
 
-    function datacontext(common) {
+    function datacontext(common, entityManagerFactory) {
         var $q = common.$q;
+        var manager = entityManagerFactory.newManager();
 
+        var getLogFn = common.logger.getLogFn;
+        var log = getLogFn(serviceId);
+        var logError = getLogFn(serviceId, 'error');
+        var logSuccess = getLogFn(serviceId, 'success');
         var service = {
+            createOrder: createOrder,
+            getBooks: getBooks,
             getPeople: getPeople,
-            getMessageCount: getMessageCount
+            getMessageCount: getMessageCount,
+            ready: getReady
         };
 
         return service;
+        function addBookToOrder(book, order) {
+           var detail = manager.createEntity("OrderDetail", {
+                book: book,
+                order: order,
+                quantity: 1
+           });
+
+           return detail;
+        }
+
+        function createOrder() {
+            manager.createEntity("Order", {
+                orderDate: new Date().toUTCString()
+            });
+            return order;
+        }
 
         function getMessageCount() { return $q.when(72); }
 
@@ -27,6 +51,35 @@
                 { firstName: 'Haley', lastName: 'Guthrie', age: 35, location: 'Wyoming' }
             ];
             return $q.when(people);
+        }
+
+        function getReady() {
+            return manager.metadataStore.fetch(manager.dataService)
+                .then(function () {
+                    logSuccess("Metadata fetched")
+                })
+                .catch(function (error) {
+                    logError("Metadata fetch failed!" + error.message, error, true)
+                    return $q.reject(error);
+                });
+        }
+
+        function getBooks() {
+            return breeze.EntityQuery.from('Books')
+                .using(manager)
+                .execute()
+                .then(success)
+                .catch(fail)
+
+            function success(resp) {
+                var book = resp.results;
+                logSuccess("Yay! We got books " + book.length, null, true);
+                return book;
+            };
+
+            function fail(error) {
+                logError('oops we got' + error.message, error, true);
+            }
         }
     }
 })();
